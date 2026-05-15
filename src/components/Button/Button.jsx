@@ -1,7 +1,7 @@
-import React from "react";
+import "./styles/Button.css";
 
 export default function Button({
-  variant = "secondary", // primary | secondary | danger | ghost
+  variant = "secondary",
   type = "button",
   onClick,
   disabled,

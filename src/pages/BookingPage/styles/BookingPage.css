@@ -1,0 +1,14 @@
+.textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  background: rgba(18, 19, 26, 0.85);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+}
+
+.textarea::placeholder {
+  color: var(--placeholder);
+}

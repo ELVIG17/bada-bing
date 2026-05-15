@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import Button from "../components/Button/Button.jsx";
-import Badge from "../components/Badge/Badge.jsx";
-import { loadBookings, removeBooking } from "../shared/lib/storage.js";
+import { useEffect, useState } from "react";
+import Button from "../../components/Button/Button.jsx";
+import Badge from "../../components/Badge/Badge.jsx";
+import { loadBookings, removeBooking } from "../../shared/lib/storage.js";
+import "./styles/StudentPage.css";
 
 export default function StudentPage() {
   const [bookings, setBookings] = useState([]);

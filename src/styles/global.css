@@ -79,6 +79,99 @@ a{color:inherit;text-decoration:none}
   background: rgba(247,198,0,.10);
 }
 
+/* ========== СТИЛИ ДЛЯ ФОРМ (добавлено) ========== */
+.label {
+  display: block;
+  margin: 10px 0 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.input, .textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  background: rgba(18, 19, 26, 0.85);
+  color: var(--text);
+  outline: none;
+  font-size: 14px;
+}
+
+.input:focus, .textarea:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 2px rgba(247, 198, 0, 0.2);
+}
+
+.input::placeholder, .textarea::placeholder {
+  color: var(--placeholder);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+/* ========== КНОПКИ ========== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: rgba(247, 198, 0, 0.55);
+}
+
+.btn-primary {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--bg);
+  font-weight: 800;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--yellow2);
+  border-color: var(--yellow2);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--yellow);
+  color: var(--yellow2);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
 @media (max-width: 900px){
   .grid{ grid-template-columns: 1fr; }
-}
+} 

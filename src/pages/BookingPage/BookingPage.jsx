@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { teachers, slots } from "../data/seed.js";
-import { formatSlot } from "../shared/lib/format.js";
-import { addBooking } from "../shared/lib/storage.js";
-import Button from "../components/Button/Button.jsx";
+import { teachers, slots } from "../../data/seed.js";
+import { formatSlot } from "../../shared/lib/format.js";
+import { addBooking } from "../../shared/lib/storage.js";
+import Button from "../../components/Button/Button.jsx";
+import "./styles/BookingPage.css";
 
 export default function BookingPage() {
   const [params] = useSearchParams();
@@ -20,6 +21,7 @@ export default function BookingPage() {
 
   const [topic, setTopic] = useState("");
   const [comment, setComment] = useState("");
+
   const [errTopic, setErrTopic] = useState("");
   const [errCommon, setErrCommon] = useState("");
   const [notice, setNotice] = useState("");

@@ -1,0 +1,27 @@
+.panel-inner {
+  margin-top: 10px;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 12px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  background: transparent;
+  color: var(--text);
+  opacity: 0.85;
+}
+
+.tab.active {
+  opacity: 1;
+  background: rgba(247, 198, 0, 0.14);
+  border-color: rgba(247, 198, 0, 0.55);
+  color: var(--yellow2);
+}

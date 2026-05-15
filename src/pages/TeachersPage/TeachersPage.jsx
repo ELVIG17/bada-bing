@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { teachers } from "../data/seed.js";
-import Button from "../components/Button/Button.jsx";
+import { teachers } from "../../data/seed.js";
+import Button from "../../components/Button/Button.jsx";
+import "./styles/TeachersPage.css";
 
 export default function TeachersPage() {
   const [q, setQ] = useState("");
@@ -18,6 +19,7 @@ export default function TeachersPage() {
     <>
       <section className="panel">
         <h1>Преподаватели</h1>
+
         <label className="label" htmlFor="search">
           Поиск
         </label>
@@ -36,6 +38,7 @@ export default function TeachersPage() {
             <article className="card" key={t.id}>
               <h2 className="h2">{t.name}</h2>
               <div className="muted">{t.subject}</div>
+
               <div className="mt-sm">
                 <Link to={`/teacher/${t.id}`}>
                   <Button variant="secondary">Открыть</Button>
