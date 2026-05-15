@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { teachers, slots } from "../data/seed.js";
-import Button from "../components/Button.jsx";
+import Button from "../components/Button/Button.jsx";
 
 export default function TeacherPage() {
   const { id } = useParams();

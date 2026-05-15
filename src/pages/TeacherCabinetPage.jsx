@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { teachers, slots } from "../data/seed.js";
 import { formatSlot } from "../shared/lib/format.js";
 import { addBooking } from "../shared/lib/storage.js";
-import Button from "../components/Button.jsx";
+import Button from "../components/Button/Button.jsx";
 
 export default function BookingPage() {
   const [params] = useSearchParams();

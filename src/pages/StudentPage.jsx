@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import Button from "../components/Button.jsx";
-import Badge from "../components/Badge.jsx";
+import Button from "../components/Button/Button.jsx";
+import Badge from "../components/Badge/Badge.jsx";
 import { loadBookings, removeBooking } from "../shared/lib/storage.js";
 
 export default function StudentPage() {

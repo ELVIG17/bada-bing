@@ -1,0 +1,19 @@
+.badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+}
+
+.badge.ok {
+  color: var(--ok);
+  border-color: rgba(46, 204, 113, 0.4);
+}
+
+.badge.no {
+  color: var(--error);
+  border-color: rgba(255, 77, 77, 0.4);
+}

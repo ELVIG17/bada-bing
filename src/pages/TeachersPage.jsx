@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { teachers } from "../data/seed.js";
-import Button from "../components/Button.jsx";
+import Button from "../components/Button/Button.jsx";
 
 export default function TeachersPage() {
   const [q, setQ] = useState("");
