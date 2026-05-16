@@ -1,19 +1,22 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { teachers, slots } from "../../data/seed.js";
+import { teachers } from "../../data/seed.js";
+import { loadSlots, getSlotById } from "../../shared/lib/storage.js";
 import Button from "../../components/Button/Button.jsx";
 import "./styles/TeacherPage.css";
 
 export default function TeacherPage() {
   const { id } = useParams();
   const teacherId = Number(id);
+  const [slots, setSlots] = useState([]);
 
   const teacher = teachers.find((t) => t.id === teacherId);
 
-  const teacherSlots = useMemo(
-    () => slots.filter((s) => s.teacherId === teacherId),
-    [teacherId]
-  );
+  useEffect(() => {
+    const allSlots = loadSlots();
+    const teacherSlots = allSlots.filter((s) => s.teacherId === teacherId);
+    setSlots(teacherSlots);
+  }, [teacherId]);
 
   if (!teacher) {
     return (
@@ -41,11 +44,11 @@ export default function TeacherPage() {
         <h2 className="h2">Доступные слоты</h2>
 
         <div className="list">
-          {teacherSlots.map((s) => (
+          {slots.map((s) => (
             <div className="item" key={s.id}>
               <div>
-                <div className="strong">{s.dt}</div>
-                <div className="muted">Длительность: {s.durationMin} мин.</div>
+                <div className="strong">📅 {s.dt}</div>
+                <div className="muted">⏱ Длительность: {s.durationMin} мин.</div>
               </div>
 
               <Link
@@ -58,8 +61,11 @@ export default function TeacherPage() {
             </div>
           ))}
 
-          {teacherSlots.length === 0 && (
-            <div className="panel muted">Нет доступных слотов</div>
+          {slots.length === 0 && (
+            <div className="panel muted empty-state">
+              😕 Нет доступных слотов.<br />
+              Преподаватель еще не добавил время для консультаций.
+            </div>
           )}
         </div>
       </section>

@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { teachers, slots } from "../../data/seed.js";
+import { teachers } from "../../data/seed.js";
 import { formatSlot } from "../../shared/lib/format.js";
-import { addBooking } from "../../shared/lib/storage.js";
+import { addBooking, getSlotById } from "../../shared/lib/storage.js";
+import { getCurrentUser } from "../../shared/lib/auth.js";
 import Button from "../../components/Button/Button.jsx";
 import "./styles/BookingPage.css";
 
@@ -17,7 +18,8 @@ export default function BookingPage() {
     () => teachers.find((t) => t.id === teacherId),
     [teacherId]
   );
-  const slot = useMemo(() => slots.find((s) => s.id === slotId), [slotId]);
+  const slot = useMemo(() => getSlotById(slotId), [slotId]);
+  const currentUser = getCurrentUser();
 
   const [topic, setTopic] = useState("");
   const [comment, setComment] = useState("");
@@ -41,6 +43,11 @@ export default function BookingPage() {
       ok = false;
     } else setErrCommon("");
 
+    if (!currentUser) {
+      setErrCommon("Ошибка: необходимо войти в систему.");
+      ok = false;
+    }
+
     if (!ok) return;
 
     addBooking({
@@ -53,11 +60,25 @@ export default function BookingPage() {
       durationMin: slot.durationMin,
       topic: topic.trim(),
       comment: comment.trim(),
+      studentName: currentUser.name,
+      studentEmail: currentUser.email,
       status: "Новая",
     });
 
     setNotice("Запись создана. Переходим в раздел «Мои записи»…");
     setTimeout(() => navigate("/student"), 700);
+  }
+
+  if (!currentUser) {
+    return (
+      <section className="panel">
+        <h1>Требуется авторизация</h1>
+        <p className="muted">Пожалуйста, войдите в систему, чтобы записаться на консультацию.</p>
+        <Link to="/">
+          <Button variant="primary">На главную</Button>
+        </Link>
+      </section>
+    );
   }
 
   return (
@@ -69,6 +90,13 @@ export default function BookingPage() {
 
       <section className="panel mt">
         <form onSubmit={onSubmit} noValidate>
+          <label className="label">Студент</label>
+          <input
+            className="input"
+            readOnly
+            value={currentUser ? `${currentUser.name} (${currentUser.email})` : "—"}
+          />
+
           <label className="label">Преподаватель</label>
           <input
             className="input"

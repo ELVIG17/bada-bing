@@ -1,8 +1,6 @@
-// Ключ для хранения пользователя в localStorage
 const AUTH_KEY = "bb_current_user";
 const USERS_KEY = "bb_users";
 
-// Загрузка всех зарегистрированных пользователей
 export function loadUsers() {
   try {
     const raw = localStorage.getItem(USERS_KEY);
@@ -12,48 +10,67 @@ export function loadUsers() {
   }
 }
 
-// Сохранение пользователей
 function saveUsers(users) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-// Инициализация демо-пользователя (вызвать при старте приложения)
+// Инициализация демо-пользователей
 export function initDemoUser() {
   const users = loadUsers();
-  const demoExists = users.some(u => u.email === "demo@example.com");
   
-  if (!demoExists) {
-    const demoUser = {
-      id: 0,
-      email: "demo@example.com",
-      password: "Demo123",
-      name: "Демо Пользователь",
-      role: "student",
-      createdAt: new Date().toISOString()
-    };
-    users.push(demoUser);
+  if (users.length === 0) {
+    const demoUsers = [
+      {
+        id: 1,
+        email: "student@example.com",
+        password: "Student123",
+        name: "Иван Студентов",
+        role: "student",
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 2,
+        email: "teacher@example.com",
+        password: "Teacher123",
+        name: "Анна Преподавательская",
+        role: "teacher",
+        teacherId: 2, // связь с преподавателем из teachers
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 3,
+        email: "admin@example.com",
+        password: "Admin123",
+        name: "Админ Админович",
+        role: "admin",
+        createdAt: new Date().toISOString()
+      }
+    ];
+    
+    for (const user of demoUsers) {
+      if (!users.some(u => u.email === user.email)) {
+        users.push(user);
+      }
+    }
     saveUsers(users);
-    console.log("✅ Демо-пользователь создан");
   }
 }
 
 // Регистрация нового пользователя
-export function registerUser(email, password, name) {
+export function registerUser(email, password, name, role = "student", teacherId = null) {
   const users = loadUsers();
-  
-  // Проверка: существует ли пользователь с таким email
   const exists = users.some(u => u.email === email);
   if (exists) {
     return { success: false, error: "Пользователь с таким email уже существует" };
   }
   
-  // Создание нового пользователя
   const newUser = {
     id: Date.now(),
-    email: email,
-    password: password,
-    name: name,
-    role: "student",
+    email,
+    password,
+    name,
+    role,
+    teacherId: role === "teacher" ? teacherId : null,
     createdAt: new Date().toISOString()
   };
   
@@ -72,19 +89,16 @@ export function loginUser(email, password) {
     return { success: false, error: "Неверный email или пароль" };
   }
   
-  // Сохраняем текущего пользователя (без пароля)
   const { password: _, ...userWithoutPassword } = user;
   localStorage.setItem(AUTH_KEY, JSON.stringify(userWithoutPassword));
   
   return { success: true, user: userWithoutPassword };
 }
 
-// Выход из системы
 export function logoutUser() {
   localStorage.removeItem(AUTH_KEY);
 }
 
-// Получение текущего пользователя
 export function getCurrentUser() {
   try {
     const raw = localStorage.getItem(AUTH_KEY);
@@ -94,31 +108,32 @@ export function getCurrentUser() {
   }
 }
 
-// Проверка, авторизован ли пользователь
 export function isAuthenticated() {
   return getCurrentUser() !== null;
 }
 
-// Обновление данных пользователя
-export function updateCurrentUser(updates) {
+export function hasRole(role) {
   const user = getCurrentUser();
-  if (!user) return null;
-  
-  const updatedUser = { ...user, ...updates };
-  localStorage.setItem(AUTH_KEY, JSON.stringify(updatedUser));
-  
-  // Также обновляем в списке пользователей
-  const users = loadUsers();
-  const index = users.findIndex(u => u.id === user.id);
-  if (index !== -1) {
-    users[index] = { ...users[index], ...updates };
-    saveUsers(users);
-  }
-  
-  return updatedUser;
+  return user ? user.role === role : false;
 }
 
-// Получить всех пользователей (для отладки)
 export function getAllUsers() {
   return loadUsers();
+}
+
+export function deleteUser(userId) {
+  const users = loadUsers();
+  const filtered = users.filter(u => u.id !== userId);
+  saveUsers(filtered);
+  return filtered;
+}
+
+export function updateUserRole(userId, newRole) {
+  const users = loadUsers();
+  const user = users.find(u => u.id === userId);
+  if (user) {
+    user.role = newRole;
+    saveUsers(users);
+  }
+  return users;
 }

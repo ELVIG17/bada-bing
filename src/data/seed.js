@@ -1,17 +1,18 @@
+// Преподаватели (базовые данные)
 export const teachers = [
-  { id: 1, name: "Иванов Иван Иванович", subject: "Математика" },
-  { id: 2, name: "Петрова Анна Сергеевна", subject: "Физика" },
-  { id: 3, name: "Сидоров Михаил Олегович", subject: "Информатика" },
-  { id: 4, name: "Кузнецова Мария Павловна", subject: "Английский язык" },
+  { id: 1, name: "Иванов Иван Иванович", subject: "Математика", subjectId: "math" },
+  { id: 2, name: "Петрова Анна Сергеевна", subject: "Физика", subjectId: "physics" },
+  { id: 3, name: "Сидоров Михаил Олегович", subject: "Информатика", subjectId: "it" },
+  { id: 4, name: "Кузнецова Мария Павловна", subject: "Английский язык", subjectId: "english" },
+  { id: 5, name: "Волков Дмитрий Алексеевич", subject: "Математика", subjectId: "math" },
+  { id: 6, name: "Соколова Елена Владимировна", subject: "Программирование", subjectId: "programming" },
 ];
 
-export const slots = [
-  { id: "s1", teacherId: 1, dt: "2026-03-20 14:00", durationMin: 30 },
-  { id: "s2", teacherId: 1, dt: "2026-03-20 15:00", durationMin: 45 },
-  { id: "s3", teacherId: 1, dt: "2026-03-21 11:30", durationMin: 30 },
-
-  { id: "s4", teacherId: 2, dt: "2026-03-18 16:00", durationMin: 30 },
-  { id: "s5", teacherId: 2, dt: "2026-03-19 10:30", durationMin: 20 },
-
-  { id: "s6", teacherId: 3, dt: "2026-03-22 13:10", durationMin: 40 },
+// Доступные предметы для фильтрации
+export const subjects = [
+  { id: "math", name: "Математика", icon: "📐" },
+  { id: "physics", name: "Физика", icon: "⚡" },
+  { id: "it", name: "Информатика", icon: "💻" },
+  { id: "english", name: "Английский язык", icon: "📖" },
+  { id: "programming", name: "Программирование", icon: "🎯" },
 ];

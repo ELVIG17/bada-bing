@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import useAuth from "../../hooks/useAuth.js";
 import AuthModal from "../AuthModal/AuthModal.jsx";
 import Button from "../Button/Button.jsx";
-import "./styles/Header.css";
+import "./styles/Header.css";  // ← проверьте что путь правильный
 import { useState } from "react";
 
 function linkClass({ isActive }) {
@@ -12,7 +12,7 @@ function linkClass({ isActive }) {
 export default function Header() {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("login"); // "login" или "register"
+  const [modalMode, setModalMode] = useState("login");
 
   const handleOpenModal = (mode) => {
     setModalMode(mode);
@@ -23,44 +23,61 @@ export default function Header() {
     return await login(email, password);
   };
 
-  const handleRegister = async (name, email, password, confirmPassword) => {
-    return await register(name, email, password, confirmPassword);
+  const handleRegister = async (name, email, password, confirmPassword, role) => {
+    return await register(name, email, password, confirmPassword, role);
+  };
+
+  const getRoleIcon = () => {
+    if (user?.role === "admin") return "👑";
+    if (user?.role === "teacher") return "📚";
+    return "🎓";
   };
 
   return (
     <>
-      <header className="header">
-        <div className="container header-inner">
-          <NavLink to="/" className="brand-link">
-            <div className="brand">bada bing</div>
+      <header className="bb-header">
+        <div className="bb-container bb-header-inner">
+          <NavLink to="/" className="bb-brand-link">
+            <div className="bb-brand">bada bing</div>
           </NavLink>
 
-          <nav className="nav">
+          <nav className="bb-nav">
             <NavLink className={linkClass} to="/">
               Преподаватели
             </NavLink>
-            {isAuthenticated && (
+            {isAuthenticated && user?.role !== "admin" && (
               <>
                 <NavLink className={linkClass} to="/student">
                   Мои записи
                 </NavLink>
-                <NavLink className={linkClass} to="/teacher-cabinet">
-                  Кабинет преподавателя
-                </NavLink>
+                {user?.role === "teacher" && (
+                  <NavLink className={linkClass} to="/teacher-cabinet">
+                    Кабинет преподавателя
+                  </NavLink>
+                )}
               </>
+            )}
+            {isAuthenticated && user?.role === "admin" && (
+              <NavLink className={linkClass} to="/admin">
+                👑 Админ-панель
+              </NavLink>
             )}
           </nav>
 
-          <div className="auth-section">
+          <div className="bb-auth-section">
             {isAuthenticated ? (
-              <div className="user-info">
-                <span className="user-name">👋 {user?.name}</span>
-                <Button variant="ghost" onClick={logout} className="logout-btn">
+              <div className="bb-user-info">
+                <span className="bb-user-role-icon">{getRoleIcon()}</span>
+                <span className="bb-user-name">{user?.name}</span>
+                <span className="bb-user-role-badge">
+                  {user?.role === "admin" ? "Админ" : user?.role === "teacher" ? "Преподаватель" : "Студент"}
+                </span>
+                <Button variant="ghost" onClick={logout} className="bb-logout-btn">
                   Выйти
                 </Button>
               </div>
             ) : (
-              <div className="auth-buttons">
+              <div className="bb-auth-buttons">
                 <Button variant="ghost" onClick={() => handleOpenModal("login")}>
                   Вход
                 </Button>

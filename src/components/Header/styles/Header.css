@@ -1,13 +1,18 @@
-.header {
+/* Убираем зависимость от глобальных переменных - дублируем их здесь на всякий случай */
+.bb-header {
   position: sticky;
   top: 0;
-  z-index: 10;
-  background: rgba(26, 27, 34, 0.95);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  background: #0B0B0F;
+  border-bottom: 1px solid #2A2B33;
 }
 
-.header-inner {
+.bb-container {
+  width: min(1100px, 92vw);
+  margin: 0 auto;
+}
+
+.bb-header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -16,84 +21,97 @@
   flex-wrap: wrap;
 }
 
-.brand {
+.bb-brand {
   font-weight: 800;
   font-size: 22px;
   letter-spacing: 0.2px;
-  color: var(--yellow);
+  color: #F7C600;
 }
 
-.brand-link {
+.bb-brand-link {
   text-decoration: none;
 }
 
-.nav {
+.bb-nav {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.nav-link {
+.bb-nav .nav-link {
   padding: 8px 14px;
   border: 1px solid transparent;
   border-radius: 10px;
-  color: var(--text);
+  color: #F5F5F5;
   opacity: 0.9;
   transition: all 0.2s;
   font-size: 14px;
+  text-decoration: none;
 }
 
-.nav-link:hover {
-  border-color: var(--border2);
+.bb-nav .nav-link:hover {
+  border-color: #3A3B44;
   background: rgba(255, 255, 255, 0.03);
 }
 
-.nav-link.active {
+.bb-nav .nav-link.active {
   border-color: rgba(247, 198, 0, 0.55);
   background: rgba(247, 198, 0, 0.1);
-  color: var(--yellow2);
+  color: #FFD84D;
   opacity: 1;
 }
 
-.auth-section {
+.bb-auth-section {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.auth-buttons {
+.bb-auth-buttons {
   display: flex;
   gap: 10px;
 }
 
-.user-info {
+.bb-user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-.user-name {
-  color: var(--yellow2);
+.bb-user-role-icon {
+  font-size: 18px;
+}
+
+.bb-user-name {
+  color: #FFD84D;
   font-weight: 500;
   font-size: 14px;
 }
 
-.logout-btn {
+.bb-user-role-badge {
+  background: rgba(247, 198, 0, 0.15);
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: #F7C600;
+}
+
+.bb-logout-btn {
   padding: 6px 12px !important;
   font-size: 13px !important;
 }
 
 @media (max-width: 700px) {
-  .header-inner {
+  .bb-header-inner {
     flex-direction: column;
     gap: 10px;
   }
   
-  .nav {
+  .bb-nav {
     justify-content: center;
   }
   
-  .auth-section {
+  .bb-auth-section {
     justify-content: center;
   }
-} 
+}

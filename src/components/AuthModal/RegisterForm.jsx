@@ -6,13 +6,14 @@ export default function RegisterForm({ onRegister, onSwitch, isLoading }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState("student");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     
-    const result = await onRegister(name, email, password, confirmPassword);
+    const result = await onRegister(name, email, password, confirmPassword, role);
     if (!result.success) {
       setError(result.error);
     }
@@ -72,6 +73,19 @@ export default function RegisterForm({ onRegister, onSwitch, isLoading }) {
           disabled={isLoading}
         />
       </div>
+
+      <div className="form-group">
+        <label className="label">Регистрация как *</label>
+        <select 
+          className="input" 
+          value={role} 
+          onChange={(e) => setRole(e.target.value)}
+          disabled={isLoading}
+        >
+          <option value="student">🎓 Студент</option>
+          <option value="teacher">📚 Преподаватель</option>
+        </select>
+      </div>
       
       <Button variant="primary" type="submit" className="modal-btn" disabled={isLoading}>
         {isLoading ? "Регистрация..." : "Зарегистрироваться"}
@@ -87,4 +101,4 @@ export default function RegisterForm({ onRegister, onSwitch, isLoading }) {
       </div>
     </form>
   );
-}   
+}

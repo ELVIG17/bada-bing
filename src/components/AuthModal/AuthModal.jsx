@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import LoginForm from "./LoginForm.jsx";
+import LoginForm from "./loginForm.jsx";
 import RegisterForm from "./RegisterForm.jsx";
 import "./styles/AuthModal.css";
 
