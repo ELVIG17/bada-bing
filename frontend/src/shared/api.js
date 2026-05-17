@@ -1,7 +1,9 @@
-// Базовый URL бекенда
-const API_URL = 'http://localhost:5000/api';
+// ТЕПЕРЬ ВСЕ ЗАПРОСЫ ИДУТ НА ТОТ ЖЕ ПОРТ ЧЕРЕЗ ПРОКСИ
+const API_URL = '/api';  // ← не полный URL, а относительный!
 
-// Вспомогательная функция для запросов с токеном
+console.log('🔧 API_URL:', API_URL);
+
+// Вспомогательная функция для запросов
 async function fetchWithAuth(endpoint, options = {}) {
   const token = localStorage.getItem('bb_token');
   
@@ -14,18 +16,13 @@ async function fetchWithAuth(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const url = `${API_URL}${endpoint}`;
+  console.log(`📡 ${options.method || 'GET'} ${url}`);
+  
+  const response = await fetch(url, {
     ...options,
     headers,
   });
-  
-  // Если токен просрочен — выходим
-  if (response.status === 401) {
-    localStorage.removeItem('bb_token');
-    localStorage.removeItem('bb_user');
-    window.location.href = '/';
-    return null;
-  }
   
   const data = await response.json();
   
@@ -38,7 +35,6 @@ async function fetchWithAuth(endpoint, options = {}) {
 
 // ========== АВТОРИЗАЦИЯ ==========
 export const authAPI = {
-  // Регистрация
   register: async (email, password, name, role, teacherId) => {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
@@ -51,13 +47,11 @@ export const authAPI = {
       throw new Error(data.error || 'Ошибка регистрации');
     }
     
-    // Сохраняем токен и пользователя
     localStorage.setItem('bb_token', data.token);
     localStorage.setItem('bb_user', JSON.stringify(data.user));
     return data;
   },
   
-  // Вход
   login: async (email, password) => {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -70,25 +64,21 @@ export const authAPI = {
       throw new Error(data.error || 'Ошибка входа');
     }
     
-    // Сохраняем токен и пользователя
     localStorage.setItem('bb_token', data.token);
     localStorage.setItem('bb_user', JSON.stringify(data.user));
     return data;
   },
   
-  // Выход
   logout: () => {
     localStorage.removeItem('bb_token');
     localStorage.removeItem('bb_user');
   },
   
-  // Получить текущего пользователя
   getCurrentUser: () => {
     const user = localStorage.getItem('bb_user');
     return user ? JSON.parse(user) : null;
   },
   
-  // Проверка токена
   checkAuth: async () => {
     const token = localStorage.getItem('bb_token');
     if (!token) return null;
@@ -107,37 +97,38 @@ export const authAPI = {
 // ========== ПРЕПОДАВАТЕЛИ ==========
 export const teachersAPI = {
   getAll: async () => {
-    const data = await fetchWithAuth('/teachers');
-    return data;
+    const response = await fetch(`${API_URL}/teachers`);
+    if (!response.ok) throw new Error('Ошибка загрузки');
+    return response.json();
   },
   
   getById: async (id) => {
-    const data = await fetchWithAuth(`/teachers/${id}`);
-    return data;
+    const response = await fetch(`${API_URL}/teachers/${id}`);
+    if (!response.ok) throw new Error('Преподаватель не найден');
+    return response.json();
   }
 };
 
 // ========== СЛОТЫ ==========
 export const slotsAPI = {
   getAll: async (teacherId = null) => {
-    const url = teacherId ? `/slots?teacherId=${teacherId}` : '/slots';
-    const data = await fetchWithAuth(url);
-    return data;
+    const url = teacherId ? `${API_URL}/slots?teacherId=${teacherId}` : `${API_URL}/slots`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Ошибка загрузки слотов');
+    return response.json();
   },
   
   create: async (slotData) => {
-    const data = await fetchWithAuth('/slots', {
+    return fetchWithAuth('/slots', {
       method: 'POST',
       body: JSON.stringify(slotData),
     });
-    return data;
   },
   
   delete: async (slotId) => {
-    const data = await fetchWithAuth(`/slots/${slotId}`, {
+    return fetchWithAuth(`/slots/${slotId}`, {
       method: 'DELETE',
     });
-    return data;
   }
 };
 
@@ -146,53 +137,46 @@ export const bookingsAPI = {
   getAll: async (filters = {}) => {
     const params = new URLSearchParams(filters).toString();
     const url = params ? `/bookings?${params}` : '/bookings';
-    const data = await fetchWithAuth(url);
-    return data;
+    return fetchWithAuth(url);
   },
   
   create: async (bookingData) => {
-    const data = await fetchWithAuth('/bookings', {
+    return fetchWithAuth('/bookings', {
       method: 'POST',
       body: JSON.stringify(bookingData),
     });
-    return data;
   },
   
   updateStatus: async (id, status) => {
-    const data = await fetchWithAuth(`/bookings/${id}/status`, {
+    return fetchWithAuth(`/bookings/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
-    return data;
   },
   
   delete: async (id) => {
-    const data = await fetchWithAuth(`/bookings/${id}`, {
+    return fetchWithAuth(`/bookings/${id}`, {
       method: 'DELETE',
     });
-    return data;
   }
 };
 
 // ========== АДМИН ==========
 export const adminAPI = {
   getUsers: async () => {
-    const data = await fetchWithAuth('/admin/users');
-    return data;
+    return fetchWithAuth('/admin/users');
   },
   
   deleteUser: async (userId) => {
-    const data = await fetchWithAuth(`/admin/users/${userId}`, {
+    return fetchWithAuth(`/admin/users/${userId}`, {
       method: 'DELETE',
     });
-    return data;
   },
   
   updateUserRole: async (userId, role) => {
-    const data = await fetchWithAuth(`/admin/users/${userId}/role`, {
+    return fetchWithAuth(`/admin/users/${userId}/role`, {
       method: 'PUT',
       body: JSON.stringify({ role }),
     });
-    return data;
   }
 };
