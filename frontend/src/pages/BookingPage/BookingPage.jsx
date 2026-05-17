@@ -1,72 +1,97 @@
-import { useMemo, useState } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { teachers } from "../../data/seed.js";
-import { formatSlot } from "../../shared/lib/format.js";
-import { addBooking, getSlotById } from "../../shared/lib/storage.js";
-import { getCurrentUser } from "../../shared/lib/auth.js";
-import Button from "../../components/Button/Button.jsx";
-import "./styles/BookingPage.css";
+import { useMemo, useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { teachersAPI, slotsAPI, bookingsAPI } from '../../shared/api.js';
+import { authAPI } from '../../shared/api.js';
+import { formatSlot } from '../../shared/lib/format.js';
+import Button from '../../components/Button/Button.jsx';
+import './styles/BookingPage.css';
 
 export default function BookingPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
 
-  const teacherId = Number(params.get("teacher"));
-  const slotId = params.get("slot");
+  const teacherId = Number(params.get('teacher'));
+  const slotId = params.get('slot');
 
-  const teacher = useMemo(
-    () => teachers.find((t) => t.id === teacherId),
-    [teacherId]
-  );
-  const slot = useMemo(() => getSlotById(slotId), [slotId]);
-  const currentUser = getCurrentUser();
+  const [teacher, setTeacher] = useState(null);
+  const [slot, setSlot] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [topic, setTopic] = useState('');
+  const [comment, setComment] = useState('');
+  const [errTopic, setErrTopic] = useState('');
+  const [errCommon, setErrCommon] = useState('');
+  const [notice, setNotice] = useState('');
 
-  const [topic, setTopic] = useState("");
-  const [comment, setComment] = useState("");
+  const currentUser = authAPI.getCurrentUser();
 
-  const [errTopic, setErrTopic] = useState("");
-  const [errCommon, setErrCommon] = useState("");
-  const [notice, setNotice] = useState("");
+  useEffect(() => {
+    loadData();
+  }, [teacherId, slotId]);
 
-  function onSubmit(e) {
+  const loadData = async () => {
+    try {
+      const [teacherData, allSlots] = await Promise.all([
+        teachersAPI.getById(teacherId),
+        slotsAPI.getAll()
+      ]);
+      setTeacher(teacherData);
+      setSlot(allSlots.find(s => s.id === slotId));
+    } catch (error) {
+      console.error('Ошибка загрузки:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  async function onSubmit(e) {
     e.preventDefault();
 
     let ok = true;
 
     if (!topic.trim()) {
-      setErrTopic("Введите тему обращения (обязательное поле).");
+      setErrTopic('Введите тему обращения (обязательное поле).');
       ok = false;
-    } else setErrTopic("");
+    } else setErrTopic('');
 
     if (!teacher || !slot) {
-      setErrCommon("Ошибка: не выбран преподаватель или слот.");
+      setErrCommon('Ошибка: не выбран преподаватель или слот.');
       ok = false;
-    } else setErrCommon("");
+    }
 
     if (!currentUser) {
-      setErrCommon("Ошибка: необходимо войти в систему.");
+      setErrCommon('Ошибка: необходимо войти в систему.');
       ok = false;
     }
 
     if (!ok) return;
 
-    addBooking({
-      id: "b" + Date.now(),
-      teacherId: teacher.id,
-      teacherName: teacher.name,
-      subject: teacher.subject,
-      slotId: slot.id,
-      dt: slot.dt,
-      durationMin: slot.durationMin,
-      topic: topic.trim(),
-      comment: comment.trim(),
-      studentName: currentUser.name,
-      studentEmail: currentUser.email,
-      status: "Новая",
-    });
+    try {
+      await bookingsAPI.create({
+        teacherId: teacher.id,
+        teacherName: teacher.name,
+        subject: teacher.subject,
+        slotId: slot.id,
+        dt: slot.dt,
+        durationMin: slot.durationMin,
+        topic: topic.trim(),
+        comment: comment.trim(),
+        studentName: currentUser.name,
+        studentEmail: currentUser.email,
+      });
 
-    setNotice("Запись создана. Переходим в раздел «Мои записи»…");
-    setTimeout(() => navigate("/student"), 700);
+      setNotice('Запись создана. Переходим в раздел «Мои записи»…');
+      setTimeout(() => navigate('/student'), 700);
+    } catch (error) {
+      setErrCommon(error.message);
+    }
+  }
+
+  if (loading) {
+    return (
+      <section className="panel">
+        <h1>Загрузка...</h1>
+      </section>
+    );
   }
 
   if (!currentUser) {
@@ -94,14 +119,14 @@ export default function BookingPage() {
           <input
             className="input"
             readOnly
-            value={currentUser ? `${currentUser.name} (${currentUser.email})` : "—"}
+            value={currentUser ? `${currentUser.name} (${currentUser.email})` : '—'}
           />
 
           <label className="label">Преподаватель</label>
           <input
             className="input"
             readOnly
-            value={teacher ? `${teacher.name} (${teacher.subject})` : "—"}
+            value={teacher ? `${teacher.name} (${teacher.subject})` : '—'}
           />
 
           <label className="label">Слот</label>

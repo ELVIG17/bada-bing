@@ -1,23 +1,39 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { teachers, subjects } from "../../data/seed.js";
-import Button from "../../components/Button/Button.jsx";
-import SubjectFilter from "../../components/SubjectFilter/SubjectFilter.jsx";
-import "./styles/TeachersPage.css";
+import { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { teachersAPI } from '../../shared/api.js';
+import { subjects } from '../../data/seed.js';
+import Button from '../../components/Button/Button.jsx';
+import SubjectFilter from '../../components/SubjectFilter/SubjectFilter.jsx';
+import './styles/TeachersPage.css';
 
 export default function TeachersPage() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState(null);
+
+  useEffect(() => {
+    loadTeachers();
+  }, []);
+
+  const loadTeachers = async () => {
+    try {
+      const data = await teachersAPI.getAll();
+      setTeachers(data);
+    } catch (error) {
+      console.error('Ошибка загрузки преподавателей:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredTeachers = useMemo(() => {
     let filtered = teachers;
     
-    // Фильтр по предмету
     if (selectedSubject) {
       filtered = filtered.filter(t => t.subjectId === selectedSubject);
     }
     
-    // Поиск по имени
     if (searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
       filtered = filtered.filter(t => 
@@ -27,12 +43,21 @@ export default function TeachersPage() {
     }
     
     return filtered;
-  }, [searchQuery, selectedSubject]);
+  }, [teachers, searchQuery, selectedSubject]);
 
   const getSubjectIcon = (subjectId) => {
     const subject = subjects.find(s => s.id === subjectId);
-    return subject ? subject.icon : "📚";
+    return subject ? subject.icon : '📚';
   };
+
+  if (loading) {
+    return (
+      <section className="panel">
+        <h1>Преподаватели</h1>
+        <p className="muted">Загрузка...</p>
+      </section>
+    );
+  }
 
   return (
     <>

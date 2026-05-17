@@ -1,43 +1,66 @@
-import { useEffect, useState } from "react";
-import { getAllUsers, deleteUser, updateUserRole, getCurrentUser } from "../../shared/lib/auth.js";
-import Button from "../../components/Button/Button.jsx";
-import "./styles/AdminPage.css";
+import { useEffect, useState } from 'react';
+import { adminAPI, authAPI } from '../../shared/api.js';
+import Button from '../../components/Button/Button.jsx';
+import './styles/AdminPage.css';
 
 export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const currentUser = getCurrentUser();
+  const currentUser = authAPI.getCurrentUser();
 
   useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = () => {
-    setUsers(getAllUsers());
-    setLoading(false);
-  };
-
-  const handleDeleteUser = (userId) => {
-    if (window.confirm("Удалить пользователя? Это действие необратимо.")) {
-      deleteUser(userId);
+    if (currentUser?.role === 'admin') {
       loadUsers();
     }
-  };
+  }, [currentUser]);
 
-  const handleChangeRole = (userId, newRole) => {
-    updateUserRole(userId, newRole);
-    loadUsers();
-  };
+  async function loadUsers() {
+    try {
+      const data = await adminAPI.getUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Ошибка загрузки пользователей:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteUser(userId) {
+    if (window.confirm('Удалить пользователя? Это действие необратимо.')) {
+      try {
+        await adminAPI.deleteUser(userId);
+        await loadUsers();
+      } catch (error) {
+        alert('Ошибка при удалении пользователя');
+      }
+    }
+  }
+
+  async function handleChangeRole(userId, newRole) {
+    try {
+      await adminAPI.updateUserRole(userId, newRole);
+      await loadUsers();
+    } catch (error) {
+      alert('Ошибка при изменении роли');
+    }
+  }
 
   const getRoleBadge = (role) => {
     switch(role) {
-      case "admin": return <span className="role-badge admin">👑 Админ</span>;
-      case "teacher": return <span className="role-badge teacher">📚 Преподаватель</span>;
+      case 'admin': return <span className="role-badge admin">👑 Админ</span>;
+      case 'teacher': return <span className="role-badge teacher">📚 Преподаватель</span>;
       default: return <span className="role-badge student">🎓 Студент</span>;
     }
   };
 
-  if (loading) return <div className="panel">Загрузка...</div>;
+  if (loading) {
+    return (
+      <section className="panel">
+        <h1>👑 Админ-панель</h1>
+        <p className="muted">Загрузка...</p>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -53,15 +76,15 @@ export default function AdminPage() {
             <div className="stat-label">Всего пользователей</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{users.filter(u => u.role === "student").length}</div>
+            <div className="stat-value">{users.filter(u => u.role === 'student').length}</div>
             <div className="stat-label">Студентов</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{users.filter(u => u.role === "teacher").length}</div>
+            <div className="stat-value">{users.filter(u => u.role === 'teacher').length}</div>
             <div className="stat-label">Преподавателей</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{users.filter(u => u.role === "admin").length}</div>
+            <div className="stat-value">{users.filter(u => u.role === 'admin').length}</div>
             <div className="stat-label">Администраторов</div>
           </div>
         </div>
@@ -87,7 +110,7 @@ export default function AdminPage() {
                   <td>{getRoleBadge(user.role)}</td>
                   <td className="muted">{new Date(user.createdAt).toLocaleDateString()}</td>
                   <td className="actions">
-                    {user.role !== "admin" && (
+                    {user.role !== 'admin' && (
                       <>
                         <select 
                           value={user.role}
@@ -108,7 +131,7 @@ export default function AdminPage() {
                         )}
                       </>
                     )}
-                    {user.role === "admin" && user.id === currentUser?.id && (
+                    {user.role === 'admin' && user.id === currentUser?.id && (
                       <span className="current-user-badge">Вы</span>
                     )}
                   </td>

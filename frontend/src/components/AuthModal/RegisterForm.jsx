@@ -1,17 +1,17 @@
-import { useState } from "react";
-import Button from "../Button/Button.jsx";
+import { useState } from 'react';
+import Button from '../Button/Button.jsx';
 
 export default function RegisterForm({ onRegister, onSwitch, isLoading }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState("student");
-  const [error, setError] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('student');
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
     
     const result = await onRegister(name, email, password, confirmPassword, role);
     if (!result.success) {
@@ -88,12 +88,12 @@ export default function RegisterForm({ onRegister, onSwitch, isLoading }) {
       </div>
       
       <Button variant="primary" type="submit" className="modal-btn" disabled={isLoading}>
-        {isLoading ? "Регистрация..." : "Зарегистрироваться"}
+        {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
       </Button>
       
       <div className="modal-switch">
         <p>
-          Уже есть аккаунт?{" "}
+          Уже есть аккаунт?{' '}
           <button type="button" onClick={onSwitch}>
             Войти
           </button>

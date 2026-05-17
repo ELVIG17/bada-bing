@@ -1,22 +1,42 @@
-import { useMemo, useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
-import { teachers } from "../../data/seed.js";
-import { loadSlots, getSlotById } from "../../shared/lib/storage.js";
-import Button from "../../components/Button/Button.jsx";
-import "./styles/TeacherPage.css";
+import { useMemo, useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { teachersAPI, slotsAPI } from '../../shared/api.js';
+import Button from '../../components/Button/Button.jsx';
+import './styles/TeacherPage.css';
 
 export default function TeacherPage() {
   const { id } = useParams();
   const teacherId = Number(id);
+  const [teacher, setTeacher] = useState(null);
   const [slots, setSlots] = useState([]);
-
-  const teacher = teachers.find((t) => t.id === teacherId);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const allSlots = loadSlots();
-    const teacherSlots = allSlots.filter((s) => s.teacherId === teacherId);
-    setSlots(teacherSlots);
+    loadData();
   }, [teacherId]);
+
+  const loadData = async () => {
+    try {
+      const [teacherData, slotsData] = await Promise.all([
+        teachersAPI.getById(teacherId),
+        slotsAPI.getAll(teacherId)
+      ]);
+      setTeacher(teacherData);
+      setSlots(slotsData);
+    } catch (error) {
+      console.error('Ошибка загрузки:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="panel">
+        <h1>Загрузка...</h1>
+      </section>
+    );
+  }
 
   if (!teacher) {
     return (
@@ -52,9 +72,7 @@ export default function TeacherPage() {
               </div>
 
               <Link
-                to={`/booking?teacher=${teacher.id}&slot=${encodeURIComponent(
-                  s.id
-                )}`}
+                to={`/booking?teacher=${teacher.id}&slot=${encodeURIComponent(s.id)}`}
               >
                 <Button variant="primary">Записаться</Button>
               </Link>

@@ -1,26 +1,40 @@
-import { useEffect, useState } from "react";
-import Button from "../../components/Button/Button.jsx";
-import Badge from "../../components/Badge/Badge.jsx";
-import { loadBookings, removeBooking } from "../../shared/lib/storage.js";
-import { getCurrentUser } from "../../shared/lib/auth.js";
-import "./styles/StudentPage.css";
+import { useEffect, useState } from 'react';
+import Button from '../../components/Button/Button.jsx';
+import Badge from '../../components/Badge/Badge.jsx';
+import { bookingsAPI } from '../../shared/api.js';
+import { authAPI } from '../../shared/api.js';
+import './styles/StudentPage.css';
 
 export default function StudentPage() {
   const [bookings, setBookings] = useState([]);
-  const currentUser = getCurrentUser();
+  const [loading, setLoading] = useState(true);
+  const currentUser = authAPI.getCurrentUser();
 
   useEffect(() => {
-    const allBookings = loadBookings();
-    // Показываем только записи текущего студента
-    const myBookings = allBookings.filter(b => b.studentEmail === currentUser?.email);
-    setBookings(myBookings);
+    if (currentUser) {
+      loadBookings();
+    }
   }, [currentUser]);
 
-  function cancelBooking(id) {
-    if (!confirm("Отменить запись?")) return;
-    const next = removeBooking(id);
-    // Обновляем список, показывая только записи текущего студента
-    setBookings(next.filter(b => b.studentEmail === currentUser?.email));
+  async function loadBookings() {
+    try {
+      const data = await bookingsAPI.getAll({ studentEmail: currentUser.email });
+      setBookings(data);
+    } catch (error) {
+      console.error('Ошибка загрузки записей:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function cancelBooking(id) {
+    if (!confirm('Отменить запись?')) return;
+    try {
+      await bookingsAPI.delete(id);
+      await loadBookings();
+    } catch (error) {
+      alert('Ошибка при отмене записи');
+    }
   }
 
   if (!currentUser) {
@@ -28,6 +42,15 @@ export default function StudentPage() {
       <section className="panel">
         <h1>Требуется авторизация</h1>
         <p className="muted">Пожалуйста, войдите в систему, чтобы увидеть свои записи.</p>
+      </section>
+    );
+  }
+
+  if (loading) {
+    return (
+      <section className="panel">
+        <h1>Мои записи</h1>
+        <p className="muted">Загрузка...</p>
       </section>
     );
   }
@@ -66,7 +89,7 @@ export default function StudentPage() {
                 </div>
               </div>
 
-              {b.status === "Новая" && (
+              {b.status === 'Новая' && (
                 <Button variant="danger" onClick={() => cancelBooking(b.id)}>
                   Отменить
                 </Button>
