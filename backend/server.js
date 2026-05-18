@@ -1,346 +1,329 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-
-// Загрузка переменных окружения
-dotenv.config();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// ========== ПОДКЛЮЧЕНИЕ К POSTGRESQL ==========
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
+
+// Проверка подключения
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('❌ Ошибка подключения к БД:', err.message);
+  } else {
+    console.log('✅ Подключено к PostgreSQL');
+    release();
+  }
+});
+
 // Middleware
 app.use(cors({
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  credentials: true
 }));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Временное хранилище в памяти (пока без БД)
-// Позже заменим на MongoDB или PostgreSQL
-const users = [];
-const teachers = [];
-const slots = [];
-const bookings = [];
-
-// ========== ИНИЦИАЛИЗАЦИЯ ДЕМО-ДАННЫХ ==========
-// Преподаватели
-teachers.push(
-  { id: 1, name: "Иванов Иван Иванович", subject: "Математика", subjectId: "math" },
-  { id: 2, name: "Петрова Анна Сергеевна", subject: "Физика", subjectId: "physics" },
-  { id: 3, name: "Сидоров Михаил Олегович", subject: "Информатика", subjectId: "it" },
-  { id: 4, name: "Кузнецова Мария Павловна", subject: "Английский язык", subjectId: "english" },
-  { id: 5, name: "Волков Дмитрий Алексеевич", subject: "Математика", subjectId: "math" },
-  { id: 6, name: "Соколова Елена Владимировна", subject: "Программирование", subjectId: "programming" }
-);
-
-// Демо-пользователи
-const bcrypt = require('bcryptjs');
-const salt = bcrypt.genSaltSync(10);
-
-users.push(
-  { 
-    id: 1, 
-    email: "student@example.com", 
-    password: bcrypt.hashSync("Student123", salt), 
-    name: "Иван Студентов", 
-    role: "student",
-    createdAt: new Date().toISOString()
-  },
-  { 
-    id: 2, 
-    email: "teacher@example.com", 
-    password: bcrypt.hashSync("Teacher123", salt), 
-    name: "Анна Преподавательская", 
-    role: "teacher",
-    teacherId: 2,
-    createdAt: new Date().toISOString()
-  },
-  { 
-    id: 3, 
-    email: "admin@example.com", 
-    password: bcrypt.hashSync("Admin123", salt), 
-    name: "Админ Админович", 
-    role: "admin",
-    createdAt: new Date().toISOString()
-  }
-);
-
-// Начальные слоты
-slots.push(
-  { id: "s1", teacherId: 1, teacherName: "Иванов Иван Иванович", dt: "2026-03-20 14:00", durationMin: 30, createdAt: new Date().toISOString() },
-  { id: "s2", teacherId: 1, teacherName: "Иванов Иван Иванович", dt: "2026-03-20 15:00", durationMin: 45, createdAt: new Date().toISOString() },
-  { id: "s3", teacherId: 2, teacherName: "Петрова Анна Сергеевна", dt: "2026-03-18 16:00", durationMin: 30, createdAt: new Date().toISOString() },
-  { id: "s4", teacherId: 3, teacherName: "Сидоров Михаил Олегович", dt: "2026-03-22 13:10", durationMin: 40, createdAt: new Date().toISOString() }
-);
-
-// ========== МАРШРУТЫ API ==========
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// ========== АВТОРИЗАЦИЯ ==========
-const jwt = require('jsonwebtoken');
-
-// Регистрация
-app.post('/api/auth/register', (req, res) => {
-  const { email, password, name, role, teacherId } = req.body;
-  
-  // Проверка существования пользователя
-  const existingUser = users.find(u => u.email === email);
-  if (existingUser) {
-    return res.status(400).json({ success: false, error: "Пользователь с таким email уже существует" });
-  }
-  
-  // Хэширование пароля
-  const hashedPassword = bcrypt.hashSync(password, salt);
-  
-  // Создание пользователя
-  const newUser = {
-    id: Date.now(),
-    email,
-    password: hashedPassword,
-    name,
-    role: role || "student",
-    teacherId: role === "teacher" ? teacherId : null,
-    createdAt: new Date().toISOString()
-  };
-  
-  users.push(newUser);
-  
-  // Генерация токена
-  const token = jwt.sign(
-    { id: newUser.id, email: newUser.email, role: newUser.role },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-  
-  res.json({
-    success: true,
-    token,
-    user: { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role }
-  });
-});
-
-// Вход
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  const user = users.find(u => u.email === email);
-  if (!user) {
-    return res.status(401).json({ success: false, error: "Неверный email или пароль" });
-  }
-  
-  const isValidPassword = bcrypt.compareSync(password, user.password);
-  if (!isValidPassword) {
-    return res.status(401).json({ success: false, error: "Неверный email или пароль" });
-  }
-  
-  const token = jwt.sign(
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+const generateToken = (user) => {
+  return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
-  
-  res.json({
-    success: true,
-    token,
-    user: { id: user.id, email: user.email, name: user.name, role: user.role }
-  });
-});
+};
 
-// Получение текущего пользователя (по токену)
-app.get('/api/auth/me', (req, res) => {
+const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
-    return res.status(401).json({ success: false, error: "Токен не предоставлен" });
+    return res.status(401).json({ error: 'Токен не предоставлен' });
   }
   
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = users.find(u => u.id === decoded.id);
+    const result = await pool.query('SELECT id, email, name, role FROM users WHERE id = $1', [decoded.id]);
     
-    if (!user) {
-      return res.status(401).json({ success: false, error: "Пользователь не найден" });
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Пользователь не найден' });
     }
+    
+    req.user = result.rows[0];
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Неверный токен' });
+  }
+};
+
+// ========== HEALTH CHECK ==========
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Сервер работает! БД подключена' });
+});
+
+// ========== РЕГИСТРАЦИЯ ==========
+app.post('/api/auth/register', async (req, res) => {
+  const { email, password, name, role } = req.body;
+  
+  try {
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ success: false, error: 'Email уже используется' });
+    }
+    
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    
+    const result = await pool.query(
+      'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role',
+      [email, passwordHash, name, role || 'student']
+    );
+    
+    const user = result.rows[0];
+    const token = generateToken(user);
     
     res.json({
       success: true,
+      token,
       user: { id: user.id, email: user.email, name: user.name, role: user.role }
     });
   } catch (error) {
-    res.status(401).json({ success: false, error: "Неверный токен" });
+    console.error('Ошибка регистрации:', error);
+    res.status(500).json({ success: false, error: 'Ошибка сервера' });
   }
+});
+
+// ========== ВХОД ==========
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  try {
+    const result = await pool.query(
+      'SELECT id, email, password_hash, name, role FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'Неверный email или пароль' });
+    }
+    
+    const user = result.rows[0];
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ success: false, error: 'Неверный email или пароль' });
+    }
+    
+    const token = generateToken(user);
+    
+    res.json({
+      success: true,
+      token,
+      user: { id: user.id, email: user.email, name: user.name, role: user.role }
+    });
+  } catch (error) {
+    console.error('Ошибка входа:', error);
+    res.status(500).json({ success: false, error: 'Ошибка сервера' });
+  }
+});
+
+// ========== ПОЛУЧЕНИЕ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ==========
+app.get('/api/auth/me', authMiddleware, (req, res) => {
+  res.json({ success: true, user: req.user });
 });
 
 // ========== ПРЕПОДАВАТЕЛИ ==========
-app.get('/api/teachers', (req, res) => {
-  res.json(teachers);
+app.get('/api/teachers', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM teachers ORDER BY id');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка загрузки преподавателей' });
+  }
 });
 
-app.get('/api/teachers/:id', (req, res) => {
-  const teacher = teachers.find(t => t.id === parseInt(req.params.id));
-  if (!teacher) {
-    return res.status(404).json({ error: "Преподаватель не найден" });
+app.get('/api/teachers/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM teachers WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Преподаватель не найден' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка загрузки' });
   }
-  res.json(teacher);
 });
 
 // ========== СЛОТЫ ==========
-app.get('/api/slots', (req, res) => {
+app.get('/api/slots', async (req, res) => {
   const { teacherId } = req.query;
-  if (teacherId) {
-    return res.json(slots.filter(s => s.teacherId === parseInt(teacherId)));
+  try {
+    let query = 'SELECT * FROM slots ORDER BY dt';
+    let params = [];
+    
+    if (teacherId) {
+      query = 'SELECT * FROM slots WHERE teacher_id = $1 ORDER BY dt';
+      params = [teacherId];
+    }
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка загрузки слотов' });
   }
-  res.json(slots);
 });
 
-app.post('/api/slots', (req, res) => {
+app.post('/api/slots', authMiddleware, async (req, res) => {
   const { teacherId, teacherName, dt, durationMin } = req.body;
   
-  const newSlot = {
-    id: "slot_" + Date.now(),
-    teacherId,
-    teacherName,
-    dt,
-    durationMin,
-    createdAt: new Date().toISOString()
-  };
-  
-  slots.push(newSlot);
-  res.status(201).json(newSlot);
+  try {
+    const result = await pool.query(
+      'INSERT INTO slots (teacher_id, teacher_name, dt, duration_min) VALUES ($1, $2, $3, $4) RETURNING *',
+      [teacherId, teacherName, dt, durationMin]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка создания слота' });
+  }
 });
 
-app.delete('/api/slots/:id', (req, res) => {
-  const slotId = req.params.id;
-  const index = slots.findIndex(s => s.id === slotId);
-  
-  if (index === -1) {
-    return res.status(404).json({ error: "Слот не найден" });
+app.delete('/api/slots/:id', authMiddleware, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM slots WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка удаления слота' });
   }
-  
-  slots.splice(index, 1);
-  
-  // Удаляем связанные записи
-  const remainingBookings = bookings.filter(b => b.slotId !== slotId);
-  bookings.length = 0;
-  bookings.push(...remainingBookings);
-  
-  res.json({ success: true });
 });
 
 // ========== ЗАПИСИ ==========
-app.get('/api/bookings', (req, res) => {
+app.get('/api/bookings', async (req, res) => {
   const { studentEmail, teacherId } = req.query;
-  
-  let result = [...bookings];
-  
-  if (studentEmail) {
-    result = result.filter(b => b.studentEmail === studentEmail);
+  try {
+    let query = 'SELECT * FROM bookings';
+    let conditions = [];
+    let params = [];
+    
+    if (studentEmail) {
+      conditions.push(`student_email = $${params.length + 1}`);
+      params.push(studentEmail);
+    }
+    
+    if (teacherId) {
+      conditions.push(`teacher_id = $${params.length + 1}`);
+      params.push(teacherId);
+    }
+    
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка загрузки записей' });
   }
-  
-  if (teacherId) {
-    result = result.filter(b => b.teacherId === parseInt(teacherId));
-  }
-  
-  res.json(result);
 });
 
-app.post('/api/bookings', (req, res) => {
+app.post('/api/bookings', authMiddleware, async (req, res) => {
   const { teacherId, teacherName, subject, slotId, dt, durationMin, topic, comment, studentName, studentEmail } = req.body;
   
-  const newBooking = {
-    id: "b" + Date.now(),
-    teacherId,
-    teacherName,
-    subject,
-    slotId,
-    dt,
-    durationMin,
-    topic,
-    comment,
-    studentName,
-    studentEmail,
-    status: "Новая",
-    createdAt: new Date().toISOString()
-  };
-  
-  bookings.push(newBooking);
-  res.status(201).json(newBooking);
+  try {
+    const result = await pool.query(
+      `INSERT INTO bookings (teacher_id, teacher_name, subject, slot_id, dt, duration_min, topic, comment, student_name, student_email, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'Новая') RETURNING *`,
+      [teacherId, teacherName, subject, slotId, dt, durationMin, topic, comment, studentName, studentEmail]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка создания записи' });
+  }
 });
 
-app.put('/api/bookings/:id/status', (req, res) => {
+app.put('/api/bookings/:id/status', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   
-  const booking = bookings.find(b => b.id === id);
-  if (!booking) {
-    return res.status(404).json({ error: "Запись не найдена" });
+  try {
+    const result = await pool.query(
+      'UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка обновления статуса' });
   }
-  
-  booking.status = status;
-  res.json(booking);
 });
 
-app.delete('/api/bookings/:id', (req, res) => {
-  const { id } = req.params;
-  const index = bookings.findIndex(b => b.id === id);
-  
-  if (index === -1) {
-    return res.status(404).json({ error: "Запись не найдена" });
+app.delete('/api/bookings/:id', authMiddleware, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM bookings WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка удаления записи' });
   }
-  
-  bookings.splice(index, 1);
-  res.json({ success: true });
 });
 
 // ========== АДМИН ==========
-app.get('/api/admin/users', (req, res) => {
-  // В реальном проекте проверять роль!
-  const safeUsers = users.map(u => ({
-    id: u.id,
-    email: u.email,
-    name: u.name,
-    role: u.role,
-    createdAt: u.createdAt
-  }));
-  res.json(safeUsers);
-});
-
-app.delete('/api/admin/users/:id', (req, res) => {
-  const userId = parseInt(req.params.id);
-  const index = users.findIndex(u => u.id === userId);
-  
-  if (index === -1) {
-    return res.status(404).json({ error: "Пользователь не найден" });
+app.get('/api/admin/users', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Доступ запрещён' });
   }
   
-  users.splice(index, 1);
-  res.json({ success: true });
+  try {
+    const result = await pool.query('SELECT id, email, name, role, created_at FROM users ORDER BY id');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка загрузки пользователей' });
+  }
 });
 
-app.put('/api/admin/users/:id/role', (req, res) => {
-  const userId = parseInt(req.params.id);
+app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Доступ запрещён' });
+  }
+  
+  try {
+    await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка удаления пользователя' });
+  }
+});
+
+app.put('/api/admin/users/:id/role', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Доступ запрещён' });
+  }
+  
   const { role } = req.body;
-  
-  const user = users.find(u => u.id === userId);
-  if (!user) {
-    return res.status(404).json({ error: "Пользователь не найден" });
+  try {
+    await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка обновления роли' });
   }
-  
-  user.role = role;
-  res.json({ success: true });
 });
 
-// Запуск сервера
+// ========== ЗАПУСК ==========
 app.listen(PORT, () => {
-  console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
-  console.log(`📡 API доступен по адресу http://localhost:${PORT}/api`);
-  console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
+  console.log(`\n🚀 Сервер запущен на http://localhost:${PORT}`);
+  console.log(`📡 API: http://localhost:${PORT}/api`);
+  console.log(`✅ Health: http://localhost:${PORT}/api/health`);
+  console.log(`\n🔑 Демо-пользователи:`);
+  console.log(`   student@example.com / Student123`);
+  console.log(`   teacher@example.com / Teacher123`);
+  console.log(`   admin@example.com / Admin123\n`);
 });
